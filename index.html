@@ -110,7 +110,7 @@ document.querySelector('.seg').onclick=e=>{const b=e.target.closest('button');if
 if(phone)setPhone(phone);
 $('text').oninput=upd;
 const norm=r=>({id:r.id,kind:r.kind,from:r.from_phone,by:r.user_email,at:new Date(r.created_at).getTime(),title:r.title||'',text:r.text||'',name:r.name,size:r.size,type:r.type,path:r.path,isText:r.is_text});
-async function load(){const {data,error}=await sb.from('drops').select('*').order('created_at',{ascending:false}).limit(300);if(error)throw error;items=data.map(norm);
+async function load(){const {data,error}=await sb.from('bridge_drops').select('*').order('created_at',{ascending:false}).limit(300);if(error)throw error;items=data.map(norm);
   if(!ready){ready=true;note(phone?'Ready.':'Pick which phone this is first.')}upd();render()}
 async function fileUrl(x){if(urls[x.id])return urls[x.id];const {data,error}=await sb.storage.from('bridge').createSignedUrl(x.path,3600);if(error)throw error;return urls[x.id]=data.signedUrl}
 function render(){
@@ -145,7 +145,7 @@ $('list').onclick=async e=>{
     if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to delete';setTimeout(()=>{if(b.isConnected){b.dataset.sure='';b.textContent='Delete'}},3000);return}
     b.disabled=true;
     if(x.path)await sb.storage.from('bridge').remove([x.path]);
-    const {error}=await sb.from('drops').delete().eq('id',x.id);
+    const {error}=await sb.from('bridge_drops').delete().eq('id',x.id);
     if(error){b.disabled=false;toast('Could not delete.')}else{toast('Deleted');items=items.filter(i=>i.id!==x.id);render()}
   }
 };
@@ -153,7 +153,7 @@ const base={from_phone:()=>phone,user_email:()=>user.email};
 $('send').onclick=async()=>{
   const text=$('text').value,title=$('title').value.trim();if(!text||!phone)return;
   $('send').disabled=true;note('Sending…');
-  const {error}=await sb.from('drops').insert({kind:'text',from_phone:phone,user_email:user.email,title,text});
+  const {error}=await sb.from('bridge_drops').insert({kind:'text',from_phone:phone,user_email:user.email,title,text});
   if(error)note('Not sent: '+error.message,true);else{$('text').value='';$('title').value='';note('Sent. It\'s on the shelf everywhere.');toast('Sent')}
   upd();
 };
@@ -165,7 +165,7 @@ async function sendFiles(fs){
     note('Uploading '+f.name+'…');
     const path=user.id+'/'+Date.now().toString(36)+'-'+(f.name||'file').replace(/[^\w.-]+/g,'-');
     let {error}=await sb.storage.from('bridge').upload(path,f,{contentType:f.type||'application/octet-stream'});
-    if(!error)({error}=await sb.from('drops').insert({kind:'file',from_phone:phone,user_email:user.email,title,name:f.name||'file',size:f.size,type:f.type||'',path,is_text:/^text\/|json|markdown|csv/.test(f.type||'')}));
+    if(!error)({error}=await sb.from('bridge_drops').insert({kind:'file',from_phone:phone,user_email:user.email,title,name:f.name||'file',size:f.size,type:f.type||'',path,is_text:/^text\/|json|markdown|csv/.test(f.type||'')}));
     if(error)note('Could not upload '+f.name+': '+error.message,true);else n++}
   if(n){$('title').value='';note(n+' file'+(n>1?'s':'')+' sent.');toast('Sent')}
 }
@@ -186,7 +186,7 @@ async function start(){
 async function go(){
   try{await load()}catch(e){note('Can\'t read the shelf: '+e.message,true);return}
   if(chan)sb.removeChannel(chan);
-  chan=sb.channel('drops').on('postgres_changes',{event:'*',schema:'public',table:'drops'},p=>{
+  chan=sb.channel('bridge_drops').on('postgres_changes',{event:'*',schema:'public',table:'bridge_drops'},p=>{
     if(p.eventType==='INSERT'){if(!items.some(i=>i.id===p.new.id))items.push(norm(p.new));toast('New drop from '+p.new.from_phone)}
     else if(p.eventType==='DELETE')items=items.filter(i=>i.id!==p.old.id);
     render()}).subscribe();
