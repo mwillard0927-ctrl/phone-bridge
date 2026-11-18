@@ -93,11 +93,11 @@ summary{cursor:pointer;min-height:32px}
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const $=id=>document.getElementById(id);
-const DEF_URL='',DEF_KEY='';
+const DEF_URL='https://ksuvjhutalvwgikvsdeu.supabase.co',DEF_KEY='sb_publishable_v60aHIwkGcr_a9UvWTb9jA_7qcffk8B';
 let phone=null,items=[],filt='all',open=new Set(),ready=false,sb=null,user=null,urls={};
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){}};
 phone=LS('bridge-phone');
-let SURL=LS('sb-url')||DEF_URL,SKEY=LS('sb-key')||DEF_KEY;
+let SURL=DEF_URL||LS('sb-url'),SKEY=DEF_KEY||LS('sb-key');
 $('surl').value=SURL;$('skey').value=SKEY;if(DEF_URL&&DEF_KEY)$('cfg').style.display='none';
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1800)}
