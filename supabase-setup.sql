@@ -18,6 +18,8 @@ create table if not exists public.bridge_drops (
   name text, size bigint, type text, path text, is_text boolean default false
 );
 alter table public.bridge_drops enable row level security;
+grant select, insert, delete on public.bridge_drops to authenticated;
+grant execute on function public.is_bridge_member() to authenticated;
 create policy "bridge members read"   on public.bridge_drops for select to authenticated using (public.is_bridge_member());
 create policy "bridge members insert" on public.bridge_drops for insert to authenticated with check (public.is_bridge_member() and user_id = auth.uid());
 create policy "bridge members delete" on public.bridge_drops for delete to authenticated using (public.is_bridge_member());
