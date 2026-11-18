@@ -10,7 +10,7 @@
 <style>
 :root{color-scheme:light dark;
 --bg:light-dark(#ffffff,#121417);--card:light-dark(#f4f5f7,#1b1e23);--ink:light-dark(#15191f,#e9ecf1);--mute:light-dark(#5b6573,#9aa4b2);--line:light-dark(#dde1e7,#2d333c);
---acc:light-dark(#d9580f,#ff8f4d);--accInk:light-dark(#ffffff,#1a0d05);--a:light-dark(#1f5fbf,#6fa4ff);--aS:light-dark(#e6efff,#18263d);--b:light-dark(#8a2f8f,#dd8ae2);--bS:light-dark(#f7e8f8,#301c33);--bad:light-dark(#b3261e,#ff8a80);
+--acc:light-dark(#d9580f,#ff8f4d);--accInk:light-dark(#ffffff,#1a0d05);--a:light-dark(#1f5fbf,#6fa4ff);--aS:light-dark(#e6efff,#18263d);--b:light-dark(#8a2f8f,#dd8ae2);--bS:light-dark(#f7e8f8,#301c33);--c:light-dark(#0f7a4a,#5fd39b);--cS:light-dark(#e3f6ec,#15301f);--bad:light-dark(#b3261e,#ff8a80);
 --disp:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);overflow-x:clip}
@@ -22,6 +22,7 @@ h1{font:800 clamp(32px,7vw,46px)/1.05 var(--disp);margin:0}
 .seg button{font:700 17px var(--body);min-height:44px;padding:8px 18px;border-radius:999px;border:2px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .seg button[aria-pressed=true][data-p="Galaxy 26"]{background:var(--a);border-color:var(--a);color:#fff}
 .seg button[aria-pressed=true][data-p="24"]{background:var(--b);border-color:var(--b);color:#fff}
+.seg button[aria-pressed=true][data-p="Krista's iPhone"]{background:var(--c);border-color:var(--c);color:#fff}
 .box{border:2.5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:10px;background:var(--bg)}
 .box.drag{border-color:var(--acc);background:var(--card)}
 input[type=text],textarea{font:16px/1.45 var(--body);color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;width:100%}
@@ -43,10 +44,10 @@ h2{font:800 28px/1 var(--disp);margin:0}
 .filt button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .list{display:grid;gap:10px}
 .it{border-radius:16px;padding:12px 14px;background:var(--card);border-left:6px solid var(--line);display:grid;gap:8px}
-.it.pa{border-left-color:var(--a)}.it.pb{border-left-color:var(--b)}
+.it.pa{border-left-color:var(--a)}.it.pb{border-left-color:var(--b)}.it.pc{border-left-color:var(--c)}
 .meta{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--mute)}
 .badge{font-weight:700;font-size:12.5px;padding:2px 9px;border-radius:999px;white-space:nowrap}
-.pa .badge{background:var(--aS);color:var(--a)}.pb .badge{background:var(--bS);color:var(--b)}
+.pa .badge{background:var(--aS);color:var(--a)}.pb .badge{background:var(--bS);color:var(--b)}.pc .badge{background:var(--cS);color:var(--c)}
 .ttl{font-weight:700;font-size:17px;overflow-wrap:anywhere}
 .txt{font:14px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7.5em;overflow:hidden;margin:0}
 .txt.open{max-height:none}
@@ -65,8 +66,8 @@ summary{cursor:pointer;min-height:32px}
 </head>
 <body>
 <div class="wrap">
-<header><h1>Phone Bridge</h1><p class="sub">Drop text or a file on one phone, then pick it up on the other. Everything stays exactly as you sent it.</p></header>
-<div class="seg" role="group" aria-label="This phone"><span>This phone:</span><button data-p="Galaxy 26" aria-pressed="false">Galaxy 26</button><button data-p="24" aria-pressed="false">24</button></div>
+<header><h1>Phone Bridge</h1><p class="sub">Drop text or a file on one phone, then pick it up on another. Everything stays exactly as you sent it.</p></header>
+<div class="seg" role="group" aria-label="This phone"><span>This phone:</span><button data-p="Galaxy 26" aria-pressed="false">Galaxy 26</button><button data-p="24" aria-pressed="false">24</button><button data-p="Krista's iPhone" aria-pressed="false">Krista's iPhone</button></div>
 <section class="box" id="box" aria-label="Drop box">
 <input type="text" id="title" placeholder="Label (optional), e.g. List A, Master code" maxlength="120">
 <textarea id="text" placeholder="Paste a prompt, batch list or code here"></textarea>
@@ -86,7 +87,7 @@ summary{cursor:pointer;min-height:32px}
 <div class="row" style="margin-top:8px"><button class="go" id="save">Sign in</button></div></div>
 <div class="row" id="outrow" style="margin-top:8px;display:none"><button id="out">Sign out</button></div></details>
 <div class="shelfh"><h2>Waiting on the shelf</h2>
-<div class="filt" role="group" aria-label="Show"><button data-f="all" aria-pressed="true">All</button><button data-f="Galaxy 26" aria-pressed="false">From Galaxy 26</button><button data-f="24" aria-pressed="false">From 24</button></div></div>
+<div class="filt" role="group" aria-label="Show"><button data-f="all" aria-pressed="true">All</button><button data-f="Galaxy 26" aria-pressed="false">From Galaxy 26</button><button data-f="24" aria-pressed="false">From 24</button><button data-f="Krista's iPhone" aria-pressed="false">From Krista</button></div></div>
 <div class="list" id="list"><div class="empty">Loading…</div></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -117,7 +118,7 @@ function render(){
   const L=items.filter(x=>filt==='all'||x.from===filt).sort((a,b)=>b.at-a.at);
   if(!L.length){$('list').innerHTML=`<div class="empty">${items.length?'Nothing from that phone yet.':'Nothing waiting. Send something and it shows up here for everyone signed in.'}</div>`;return}
   $('list').innerHTML=L.map(x=>{
-    const pc=x.from==='Galaxy 26'?'pa':'pb',isOpen=open.has(x.id);
+    const pc=x.from==='Galaxy 26'?'pa':x.from==="Krista's iPhone"?'pc':'pb',isOpen=open.has(x.id);
     let body='',acts='';
     if(x.kind==='text'){
       body=`<pre class="txt${isOpen?' open':''}">${esc(x.text.length>4000&&!isOpen?x.text.slice(0,4000)+'…':x.text)}</pre>`;
