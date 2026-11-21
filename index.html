@@ -60,6 +60,10 @@ h2{font:800 28px/1 var(--disp);margin:0}
 .empty{color:var(--mute);text-align:center;padding:28px 10px;border:1.5px dashed var(--line);border-radius:16px}
 .off{border-radius:16px;padding:14px;background:var(--card)}
 summary{cursor:pointer;min-height:32px}
+.tabs{display:flex;gap:8px}.tabs button{flex:1;border-radius:999px;font:800 18px var(--disp)}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bdn{display:inline-block;min-width:22px;padding:0 6px;border-radius:999px;background:#e11d48;color:#fff;font:700 13px/22px var(--body);text-align:center}
+[hidden]{display:none!important}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
 .toast.show{opacity:1}
 </style>
@@ -67,17 +71,26 @@ summary{cursor:pointer;min-height:32px}
 <body>
 <div class="wrap">
 <header><h1>Phone Bridge</h1><p class="sub">Drop text or a file on one phone, then pick it up on another. Everything stays exactly as you sent it.</p></header>
+<nav class="tabs" role="tablist"><button id="tabShelf" aria-pressed="true">Shelf</button><button id="tabBoard" aria-pressed="false">Boards <span id="bdN" class="bdn" hidden></span></button></nav>
+<div id="vShelf" style="display:grid;gap:16px">
 <div class="seg" role="group" aria-label="This phone"><span>This phone:</span><button data-p="Galaxy 26" aria-pressed="false">Galaxy 26</button><button data-p="24" aria-pressed="false">24</button><button data-p="Krista's iPhone" aria-pressed="false">Krista's iPhone</button></div>
 <section class="box" id="box" aria-label="Drop box">
 <input type="text" id="title" placeholder="Label (optional), e.g. List A, Master code" maxlength="120">
 <textarea id="text" placeholder="Paste a prompt, batch list or code here"></textarea>
 <div class="row">
 <button class="go" id="send" disabled>Send text</button>
+<select id="dest" aria-label="Send to" style="font:600 15px var(--body);min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);padding:0 10px"><option value="">→ Shelf</option></select>
 <label class="file">Add files<input type="file" id="file" multiple></label>
 <span class="count" id="cnt"></span>
 </div>
 <p class="note" id="st">Connecting…</p>
 </section>
+
+<div class="shelfh"><h2>Waiting on the shelf</h2>
+<div class="filt" role="group" aria-label="Show"><button data-f="all" aria-pressed="true">All</button><button data-f="Galaxy 26" aria-pressed="false">From Galaxy 26</button><button data-f="24" aria-pressed="false">From 24</button><button data-f="Krista's iPhone" aria-pressed="false">From Krista</button></div></div>
+<div class="list" id="list"><div class="empty">Loading…</div></div>
+</div>
+<div id="vBoard" hidden></div>
 <details class="off" id="setup"><summary><b>Account</b> <span id="who" class="note"></span></summary>
 <div id="cfg"><p class="note">Supabase project (once per phone)</p>
 <input type="text" id="surl" placeholder="https://xxxx.supabase.co">
@@ -86,13 +99,11 @@ summary{cursor:pointer;min-height:32px}
 <input type="password" id="pw" placeholder="Password" autocomplete="current-password" style="margin-top:8px;width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:16px var(--body)">
 <div class="row" style="margin-top:8px"><button class="go" id="save">Sign in</button></div></div>
 <div class="row" id="outrow" style="margin-top:8px;display:none"><button id="out">Sign out</button></div></details>
-<div class="shelfh"><h2>Waiting on the shelf</h2>
-<div class="filt" role="group" aria-label="Show"><button data-f="all" aria-pressed="true">All</button><button data-f="Galaxy 26" aria-pressed="false">From Galaxy 26</button><button data-f="24" aria-pressed="false">From 24</button><button data-f="Krista's iPhone" aria-pressed="false">From Krista</button></div></div>
-<div class="list" id="list"><div class="empty">Loading…</div></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+import {mountBoard} from './board.js';
 const $=id=>document.getElementById(id);
 const DEF_URL='https://ksuvjhutalvwgikvsdeu.supabase.co',DEF_KEY='sb_publishable_v60aHIwkGcr_a9UvWTb9jA_7qcffk8B';
 let phone=null,items=[],filt='all',open=new Set(),ready=false,sb=null,user=null,urls={};
@@ -154,6 +165,7 @@ const base={from_phone:()=>phone,user_email:()=>user.email};
 $('send').onclick=async()=>{
   const text=$('text').value,title=$('title').value.trim();if(!text||!phone)return;
   $('send').disabled=true;note('Sending…');
+  if($('dest').value){try{await board.postTo($('dest').value,{title:title||text.split('\n')[0].slice(0,140),body:text});$('text').value='';$('title').value='';note('Posted to the board.');toast('Posted')}catch(e){note('Not posted: '+e.message,true)}upd();return}
   const {error}=await sb.from('bridge_drops').insert({kind:'text',from_phone:phone,user_email:user.email,title,text});
   if(error)note('Not sent: '+error.message,true);else{$('text').value='';$('title').value='';note('Sent. It\'s on the shelf everywhere.');toast('Sent')}
   upd();
@@ -162,6 +174,7 @@ async function sendFiles(fs){
   if(!phone){note('Pick which phone this is first.',true);return}
   if(!ready){note('Sign in first.',true);return}
   const title=$('title').value.trim();let n=0;
+  if($('dest').value){for(const f of fs){note('Uploading '+f.name+'…');try{await board.postTo($('dest').value,{title:title||f.name,body:'',file:f});n++}catch(e){note('Could not post '+f.name+': '+e.message,true)}}if(n){$('title').value='';note(n+' file post'+(n>1?'s':'')+' added to the board.');toast('Posted')}return}
   for(const f of fs){if(f.size>50*1048576){note(f.name+' is over 50 MB, too big to send.',true);continue}
     note('Uploading '+f.name+'…');
     const path=user.id+'/'+Date.now().toString(36)+'-'+(f.name||'file').replace(/[^\w.-]+/g,'-');
@@ -181,10 +194,11 @@ async function start(){
   if(!SURL||!SKEY){note('Open Account and enter your Supabase details.',true);$('setup').open=true;$('list').innerHTML='<div class="off">Set up the account above to see the shelf.</div>';return}
   sb=createClient(SURL,SKEY,{auth:{persistSession:true}});
   const {data:{session}}=await sb.auth.getSession();user=session?.user||null;showAuth();
-  sb.auth.onAuthStateChange((_e,s)=>{const was=user;user=s?.user||null;showAuth();if(user&&!was)go();if(!user){ready=false;items=[];render();note('Signed out.')}});
+  sb.auth.onAuthStateChange((_e,s)=>{const was=user;user=s?.user||null;showAuth();if(user&&!was)go();if(!user){ready=false;items=[];render();note('Signed out.');if(board){board.destroy();board=null}}});
   if(user)go();else{note('Sign in to use the shelf.');$('list').innerHTML='<div class="off">Sign in above to see the shelf.</div>'}
 }
 async function go(){
+  startBoard();
   try{await load()}catch(e){note('Can\'t read the shelf: '+e.message,true);return}
   if(chan)sb.removeChannel(chan);
   chan=sb.channel('bridge_drops').on('postgres_changes',{event:'*',schema:'public',table:'bridge_drops'},p=>{
@@ -200,6 +214,12 @@ $('save').onclick=async()=>{
   if(error)note('Sign-in failed: '+error.message,true);else $('pw').value='';
 };
 $('out').onclick=()=>sb.auth.signOut();
+let board=null;
+function showTab(b){$('tabShelf').setAttribute('aria-pressed',!b);$('tabBoard').setAttribute('aria-pressed',b);$('vShelf').hidden=b;$('vBoard').hidden=!b;if(b&&board)board.refresh()}
+$('tabShelf').onclick=()=>showTab(false);$('tabBoard').onclick=()=>showTab(true);
+function syncDest(){const d=$('dest'),v=d.value;d.innerHTML='<option value="">→ Shelf</option>'+(board?board.projects():[]).map(p=>`<option value="${p.id}">→ Board: ${esc(p.name)}</option>`).join('');d.value=[...d.options].some(o=>o.value===v)?v:''}
+function startBoard(){if(board||!user)return;board=mountBoard({sb,user,displayName:(user.email||'user').split('@')[0],root:$('vBoard'),toast,onUnread:n=>{$('bdN').hidden=!n;$('bdN').textContent=n;syncDest()}})}
+$('dest').onfocus=syncDest;
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready)load().catch(()=>{})});
 setInterval(()=>{if(ready)render()},60000);
 start();
